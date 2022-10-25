@@ -17,7 +17,8 @@ architecture behavioral of mm_alu is
 begin	
 	r4: process (rs2, rs3, sel) 	--all the multiplication is done here
 	variable mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication  
-	variable clz0, clz1, clz2, clz3 : std_logic_vector(31 downto 0) := 0;
+	variable clz0, clz1, clz2, clz3 : std_logic_vector(31 downto 0) := 0;	--counts leading 0's in each 32 bit section of rs1
+	variable ones0, ones1, ones2, ones3 : std_logic_vector(31 downto 0) := 0; --counts number of 1's in each 32 bit section of rs1
 	begin	
 		if sel(24) = "0" then  --load immediate to the sel(20 downto 5)'th section of rd's 16 bit sections
 			if sel(23 downto 21) = "000" then
@@ -160,15 +161,48 @@ begin
 				rd(95 downto 64) <= minimum(rs1(95 downto 64), rs2(95 downto 64));
 				rd(127 downto 96) <= minimum(rs1(127 downto 96), rs2(127 downto 96));
 			elsif sel(18 downto 15) = "1001" then --multiply low 16 unsigned bits of each 32 bit section of rs1 and rs2 and store in corresponding 32 bit section of rd
-				rd(31 downto 0) := std_logic_vector(unsigned(rs1(15 downto 0)) * unsigned(rs2(15 downto 0)));
-				rd(63 downto 32) := std_logic_vector(unsigned(rs1(47 downto 32)) * unsigned(rs2(47 downto 32)));
-				rd(95 downto 64) := std_logic_vector(unsigned(rs1(79 downto 64)) * unsigned(rs2(79 downto 64)));
-				rd(127 downto 96) := std_logic_vector(unsigned(rs1(111 downto 96)) * unsigned(rs2(111 downto 96)));
-			elsif sel(18 downto 15) = "1010" then --   
-				rd(31 downto 0) := std_logic_vector(unsigned(rs1(15 downto 0)) * unsigned(rs2(15 downto 0)));
-				rd(63 downto 32) := std_logic_vector(unsigned(rs1(47 downto 32)) * unsigned(rs2(47 downto 32)));
-				rd(95 downto 64) := std_logic_vector(unsigned(rs1(79 downto 64)) * unsigned(rs2(79 downto 64)));
-				rd(127 downto 96) := std_logic_vector(unsigned(rs1(111 downto 96)) * unsigned(rs2(111 downto 96)));
+				rd(31 downto 0) <= std_logic_vector(unsigned(rs1(15 downto 0)) * unsigned(rs2(15 downto 0)));
+				rd(63 downto 32) <= std_logic_vector(unsigned(rs1(47 downto 32)) * unsigned(rs2(47 downto 32)));
+				rd(95 downto 64) <= std_logic_vector(unsigned(rs1(79 downto 64)) * unsigned(rs2(79 downto 64)));
+				rd(127 downto 96) <= std_logic_vector(unsigned(rs1(111 downto 96)) * unsigned(rs2(111 downto 96)));
+			elsif sel(18 downto 15) = "1010" then --multiply lower unsigned 16 bits of rs1's 32 bit sections with unsigned 5 bit rs2 section from sel and store in corresponding 32 bit sections of rd  
+				rd(31 downto 0) <= std_logic_vector(unsigned(rs1(15 downto 0)) * unsigned(sel(14 downto 10)));
+				rd(63 downto 32) <= std_logic_vector(unsigned(rs1(47 downto 32)) * unsigned(sel(14 downto 10)));
+				rd(95 downto 64) <= std_logic_vector(unsigned(rs1(79 downto 64)) * unsigned(sel(14 downto 10)));
+				rd(127 downto 96) <= std_logic_vector(unsigned(rs1(111 downto 96)) * unsigned(sel(14 downto 10)));
+			elsif sel(18 downto 15) = "1011" then -- bitwise logical or of rs1 and rs2
+				rd <= rs1 or rs2;
+			elsif sel(18 downto 15) = "1100" then -- counts 1's in each 32 bit section of rs1 and stores it in corresponding 32 bit sections of rd
+				sec0: for i in 31 downto 0 loop
+					if rs1(i) = '1' then
+						ones0:=ones0+1;
+					end if;		
+				end loop sec0;		
+				sec1: for i in 63 downto 32 loop
+					if rs1(i) = '1' then
+						ones1:=ones1+1;
+					end if;		
+				end loop sec1; 
+				sec2: for i in 95 downto 64 loop
+					if rs1(i) ='1' then
+						ones2:=ones2+1;
+					end if;		
+				end loop sec2;
+				sec3: for i in 127 downto 96 loop
+					if rs1(i) ='1' then
+						ones3:=ones3+1;
+					end if;		
+				end loop sec3; 
+				rd(31 downto 0)<=ones0;
+				rd(63 downto 32)<=ones1;
+				rd(95 downto 64)<=ones2;
+				rd(127 downto 96)<=ones3;
+			elsif sel(18 downto 15) = "1101" then --
+			
+			elsif sel(18 downto 15) = "1110" then --
+			
+			elsif sel(18 downto 15) = "1111" then --
+				
 			end if;
 		end if;
 	end process r4;
