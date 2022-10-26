@@ -14,7 +14,7 @@ end mm_alu;
 
 architecture behavioral of mm_alu is  
 begin	
-	r4: process (rs2, rs3, sel) 	--all the multiplication is done here
+	alu: process (rs2, rs3, rs1, sel) 	
 	variable mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication  
 	variable clz0, clz1, clz2, clz3 : std_logic_vector(31 downto 0) := (others => '0');	--counts leading 0's in each 32 bit section of rs1
 	variable ones0, ones1, ones2, ones3 : std_logic_vector(31 downto 0) := (others => '0'); --counts number of 1's in each 32 bit section of rs1
@@ -222,12 +222,12 @@ begin
 				rd(63 downto 32)<= rs1ror(63 downto 32);
 				rd(95 downto 64)<= rs1ror(95 downto 64);
 				rd(127 downto 96)<= rs1ror(127 downto 96);
-			elsif sel(18 downto 15) = "1110" then
+			elsif sel(18 downto 15) = "1110" then --subtract rs1 unsigned 32 bit sections from rs2 unsigned 32 bit sections and store them in the corresponding 32 bit sections of rd
 				rd(31 downto 0) <= std_logic_vector(unsigned(rs2(31 downto 0)) - unsigned(rs1(31 downto 0)));  
 				rd(63 downto 32) <= std_logic_vector(unsigned(rs2(63 downto 32)) - unsigned(rs1(63 downto 32)));
 				rd(95 downto 64) <= std_logic_vector(unsigned(rs2(95 downto 64)) - unsigned(rs1(95 downto 64)));
 				rd(127 downto 96) <= std_logic_vector(unsigned(rs2(127 downto 96)) - unsigned(rs1(127 downto 96)));		
-			elsif sel(18 downto 15) = "1111" then
+			elsif sel(18 downto 15) = "1111" then --add signed rs1 and rs2 16 bit sections with saturation and store in the corresponding 16 bit sections of rd
 				rd(15 downto 0) <= std_logic_vector(resize(signed(rs2(15 downto 0)) - signed(rs1(15 downto 0)), 16));
 				rd(31 downto 16) <= std_logic_vector(resize(signed(rs2(31 downto 16)) - signed(rs1(31 downto 16)), 16)); 
 				rd(47 downto 32) <= std_logic_vector(resize(signed(rs2(47 downto 32)) - signed(rs1(47 downto 32)), 16));
@@ -238,56 +238,7 @@ begin
 				rd(127 downto 112) <= std_logic_vector(resize(signed(rs2(127 downto 112)) - signed(rs1(127 downto 112)), 16));			
 			end if;
 		end if;
-	end process r4;
+	end process alu;
 	
 	
 end architecture behavioral;
-
-
-
-
---signal mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication
---begin	
---	mult: process (rs2, rs3, sel) 	--all the multiplication is done here
---	begin													  
---		if sel = ("000" or "010") then --multiplies the low 16 bits of rs3 and rs2
---			mult_out(31 downto 0) <= std_logic_vector(resize(signed(rs3(15 downto 0)) * signed(rs2(15 downto 0)), 32));
---			mult_out(63 downto 32) <= std_logic_vector(resize(signed(rs3(47 downto 32)) * signed(rs2(47 downto 32)), 32));
---			mult_out(95 downto 64) <= std_logic_vector(resize(signed(rs3(79 downto 64)) * signed(rs2(79 downto 64)), 32));
---			mult_out(127 downto 96) <= std_logic_vector(resize(signed(rs3(111 downto 96)) * signed(rs2(111 downto 96)), 32));
---		elsif sel = ("001" or "011") then --multiplies the high 16 bits of rs3 and rs2
---			mult_out(31 downto 0) <= std_logic_vector(resize(signed(rs3(31 downto 16)) * signed(rs2(31 downto 16)), 32)); 
---			mult_out(63 downto 32) <= std_logic_vector(resize(signed(rs3(63 downto 48)) * signed(rs2(63 downto 48)), 32));
---			mult_out(95 downto 64) <= std_logic_vector(resize(signed(rs3(95 downto 80)) * signed(rs2(95 downto 80)), 32));
---			mult_out(127 downto 96) <= std_logic_vector(resize(signed(rs3(127 downto 112)) * signed(rs2(127 downto 112)), 32));	 
---		elsif sel = ("100" or "110") then --multiplies the low 32 bits of rs3 and rs2
---			mult_out(63 downto 0) <= std_logic_vector(resize(signed(rs3(31 downto 0)) * signed(rs2(31 downto 0)), 64));
---			mult_out(127 downto 64) <= std_logic_vector(resize(signed(rs3(95 downto 64)) * signed(rs2(95 downto 64)), 64));
---		elsif sel = ("101" or "111") then --multiplies the high 32 bits of rs3 and rs2
---			mult_out(63 downto 0) <= std_logic_vector(resize(signed(rs3(63 downto 32)) * signed(rs2(63 downto 32)), 64));
---			mult_out(127 downto 64) <= std_logic_vector(resize(signed(rs3(127 downto 96)) * signed(rs2(127 downto 96)), 64));	
---		end if;	  
---	end process mult;		 
---	
---	secondHalf: process (mult_out, rs1)	--all the addition/subtraction is done here
---	begin
---		if sel = ("000" or "001") then --adding 32 bits of mult_out to rs1
---			rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 32));  
---			rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 32));
---			rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 32));
---			rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 32));
---		elsif sel = ("010" or "011") then --subtracting 32 bits of mult_out from rs1
---			rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 32));  
---			rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 32));
---			rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 32));
---			rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
---		elsif sel = ("100" or "101") then --adding 64 bits of mult_out to rs1
---			rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64));
---			rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64));
---		elsif sel = ("110" or "111") then --subtracting 64 bits of mult_out from rs1
---			rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64));
---			rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64));
---		end if;
---	end	process secondHalf;
-	
---end architecture behavioral;
