@@ -209,7 +209,7 @@ begin
 			elsif sel(18 downto 15) = "1101" then 
 				rs1ror := rs1;	 --save a copy of rs1
 				for i in 0 to 3 loop
-					rot := to_integer(unsigned(rs2((32*(i+1))-1 downto (32*i)))); --gets the # of rotations for each section
+					rot := to_integer(unsigned(rs2(((32*i)+4) downto (32*i)))); --gets the # of rotations for each section
 					if rot=0 then --if 0 just save it directly to rd
 						next;
 					else --if not then rotate
