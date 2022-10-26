@@ -164,12 +164,12 @@ begin
 				rd(63 downto 32) <= maximum(rs1(63 downto 32), rs2(63 downto 32));
 				rd(95 downto 64) <= maximum(rs1(95 downto 64), rs2(95 downto 64));
 				rd(127 downto 96) <= maximum(rs1(127 downto 96), rs2(127 downto 96));
-			elsif sel(18 downto 15) = "1000" then --place smaller signed value between rs1 and rs2 32 bit sections in corresponding 32 bit section of rd
+			elsif sel(19 downto 15) = "01000" then --place smaller signed value between rs1 and rs2 32 bit sections in corresponding 32 bit section of rd
 				rd(31 downto 0) <= minimum(rs1(31 downto 0), rs2(31 downto 0));  
 				rd(63 downto 32) <= minimum(rs1(63 downto 32), rs2(63 downto 32));
 				rd(95 downto 64) <= minimum(rs1(95 downto 64), rs2(95 downto 64));
 				rd(127 downto 96) <= minimum(rs1(127 downto 96), rs2(127 downto 96));
-			elsif sel(19 downto 15) = "01001" then --multiply low 16 unsigned bits of each 32 bit section of rs1 and rs2 and store in corresponding 32 bit section of rd
+			elsif sel(18 downto 15) = "1001" then --multiply low 16 unsigned bits of each 32 bit section of rs1 and rs2 and store in corresponding 32 bit section of rd
 				rd(31 downto 0) <= std_logic_vector(unsigned(rs1(15 downto 0)) * unsigned(rs2(15 downto 0)));
 				rd(63 downto 32) <= std_logic_vector(unsigned(rs1(47 downto 32)) * unsigned(rs2(47 downto 32)));
 				rd(95 downto 64) <= std_logic_vector(unsigned(rs1(79 downto 64)) * unsigned(rs2(79 downto 64)));
