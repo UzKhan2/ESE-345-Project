@@ -18,7 +18,8 @@ begin
 	variable mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication  
 	variable clz0, clz1, clz2, clz3 : std_logic_vector(31 downto 0) := (others => '0');	--counts leading 0's in each 32 bit section of rs1
 	variable ones0, ones1, ones2, ones3 : std_logic_vector(31 downto 0) := (others => '0'); --counts number of 1's in each 32 bit section of rs1
-	variable rot : std_logic_vector(31 downto 0);
+	variable rot : integer; --holds the number of rotations needed based on the 32 bit sections of rs2
+	variable rs1ror : std_logic_vector(127 downto 0) := (others => '0'); --holds rs1 and rotates it
 	begin	
 		if sel(24) = '0' then  --load immediate to the sel(20 downto 5)'th section of rd's 16 bit sections
 			if sel(23 downto 21) = "000" then
@@ -206,24 +207,26 @@ begin
 				rd(95 downto 64)<=ones2;
 				rd(127 downto 96)<=ones3;
 			elsif sel(18 downto 15) = "1101" then 
-				rot <= to_integer(unsigned(rot));
-				for i in rot downto 0 loop
-					rs1 <= rs1(0) &  rs1(31 downto 1);
-					rs1 <= rs1(32) &  rs1(62 downto 33);
-					rs1 <= rs1(64) &  rs1(95 downto 65);
-					rs1 <= rs1(96) &  rs1(127 downto 97);
+				rs1ror := rs1;	 --save a copy of rs1
+				for i in 0 to 3 loop
+					rot := to_integer(unsigned(rs2((32*(i+1))-1 downto (32*i)))); --gets the # of rotations for each section
+					if rot=0 then --if 0 just save it directly to rd
+						next;
+					else --if not then rotate
+						for j in 0 to rot-1 loop  
+							rs1ror((32*(i+1))-1 downto 32*i):= rs1ror(32*i) & rs1ror((32*(i+1))-1 downto (32*i)+1);	
+						end loop;
+					end if;	
 				end loop;
-			rd(31 downto 0) <= rs1(31 downto 0);
-			rd(63 downto 32)<= rs1(63 downto 32);
-			rd(95 downto 64)<= rs1(95 downto 64);
-			rd(127 downto 96)<= rs1(127 downto 96);
-			
+				rd(31 downto 0) <= rs1ror(31 downto 0);
+				rd(63 downto 32)<= rs1ror(63 downto 32);
+				rd(95 downto 64)<= rs1ror(95 downto 64);
+				rd(127 downto 96)<= rs1ror(127 downto 96);
 			elsif sel(18 downto 15) = "1110" then
 				rd(31 downto 0) <= std_logic_vector(unsigned(rs2(31 downto 0)) - unsigned(rs1(31 downto 0)));  
 				rd(63 downto 32) <= std_logic_vector(unsigned(rs2(63 downto 32)) - unsigned(rs1(63 downto 32)));
 				rd(95 downto 64) <= std_logic_vector(unsigned(rs2(95 downto 64)) - unsigned(rs1(95 downto 64)));
-				rd(127 downto 96) <= std_logic_vector(unsigned(rs2(127 downto 96)) - unsigned(rs1(127 downto 96)));
-			
+				rd(127 downto 96) <= std_logic_vector(unsigned(rs2(127 downto 96)) - unsigned(rs1(127 downto 96)));		
 			elsif sel(18 downto 15) = "1111" then
 				rd(15 downto 0) <= std_logic_vector(resize(signed(rs2(15 downto 0)) - signed(rs1(15 downto 0)), 16));
 				rd(31 downto 16) <= std_logic_vector(resize(signed(rs2(31 downto 16)) - signed(rs1(31 downto 16)), 16)); 
@@ -232,8 +235,7 @@ begin
 				rd(79 downto 64) <= std_logic_vector(resize(signed(rs2(79 downto 64)) - signed(rs1(79 downto 64)), 16));
 				rd(95 downto 80) <= std_logic_vector(resize(signed(rs2(95 downto 80)) - signed(rs1(95 downto 80)), 16));
 				rd(111 downto 96) <= std_logic_vector(resize(signed(rs2(111 downto 96)) - signed(rs1(111 downto 96)), 16));
-				rd(127 downto 112) <= std_logic_vector(resize(signed(rs2(127 downto 112)) - signed(rs1(127 downto 112)), 16));
-				
+				rd(127 downto 112) <= std_logic_vector(resize(signed(rs2(127 downto 112)) - signed(rs1(127 downto 112)), 16));			
 			end if;
 		end if;
 	end process r4;
