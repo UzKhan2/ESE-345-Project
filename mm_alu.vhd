@@ -19,7 +19,13 @@ begin
 	variable clz0, clz1, clz2, clz3 : std_logic_vector(31 downto 0) := (others => '0');	--counts leading 0's in each 32 bit section of rs1
 	variable ones0, ones1, ones2, ones3 : std_logic_vector(31 downto 0) := (others => '0'); --counts number of 1's in each 32 bit section of rs1
 	variable rot : integer; --holds the number of rotations needed based on the 32 bit sections of rs2
-	variable rs1ror : std_logic_vector(127 downto 0) := (others => '0'); --holds rs1 and rotates it
+	variable rs1ror : std_logic_vector(127 downto 0) := (others => '0'); --holds rs1 and rotates it	 
+	variable max32 : std_logic_vector(31 downto 0) := "01111111111111111111111111111111";  
+	variable min32 : std_logic_vector(31 downto 0) := "10000000000000000000000000000000";
+	variable max64 : std_logic_vector(63 downto 0) := "0111111111111111111111111111111111111111111111111111111111111111";
+	variable min64 : std_logic_vector(63 downto 0) := "1000000000000000000000000000000000000000000000000000000000000000";
+	variable temp : std_logic_vector(32 downto 0) := (others => '0');
+	variable temp2 : std_logic_vector(64 downto 0) := (others => '0');
 	begin	
 		if sel(24) = '0' then  --load immediate to the sel(20 downto 5)'th section of rd's 16 bit sections
 			if sel(23 downto 21) = "000" then
@@ -45,52 +51,220 @@ begin
 				mult_out(63 downto 32) := std_logic_vector(resize(signed(rs3(47 downto 32)) * signed(rs2(47 downto 32)), 32));
 				mult_out(95 downto 64) := std_logic_vector(resize(signed(rs3(79 downto 64)) * signed(rs2(79 downto 64)), 32));
 				mult_out(127 downto 96) := std_logic_vector(resize(signed(rs3(111 downto 96)) * signed(rs2(111 downto 96)), 32));
-				if sel(22 downto 20) = "000" then --adds 32 bit product to 32 bit rs1
-					rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 32));  
-					rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 32));
-					rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 32));
-					rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 32));
-				elsif sel(22 downto 20) = "010" then --subtracts 32 bit product from 32 bit rs1
-					rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 32));  
-					rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 32));
-					rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 32));
-					rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
+				if sel(22 downto 20) = "000" then --adds 32 bit product to 32 bit rs1  
+					temp := std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 33));
+					if (temp > max32) then 
+						rd(31 downto 0)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(31 downto 0)<=min32(31 downto 0);
+					else 
+						rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 32)); 
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 33));
+					if (temp > max32) then 
+						rd(63 downto 32)<=max32(31 downto 0);	
+					elsif (temp < min32) then
+						rd(63 downto 32)<=min32(31 downto 0);
+					else 
+						rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 32));
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 33));
+					if (temp > max32) then 
+						rd(95 downto 64)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(95 downto 64)<=min32(31 downto 0);
+					else 
+						rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 32));
+					end if;
+					temp := std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 33));
+					if (temp > max32) then 
+						rd(127 downto 96)<=max32(31 downto 0);	 
+					elsif (temp < min32) then
+						rd(127 downto 96)<=min32(31 downto 0);
+					else 
+						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 32));
+					end if;	
+				elsif sel(22 downto 20) = "010" then --subtracts 32 bit product from 32 bit rs1	 
+					temp := std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 33));
+					if (temp > max32) then 
+						rd(31 downto 0)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(31 downto 0)<=min32(31 downto 0);
+					else 
+						rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 32)); 
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 33));
+					if (temp > max32) then 
+						rd(63 downto 32)<=max32(31 downto 0);	
+					elsif (temp < min32) then
+						rd(63 downto 32)<=min32(31 downto 0);
+					else 
+						rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 32));
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 33));
+					if (temp > max32) then 
+						rd(95 downto 64)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(95 downto 64)<=min32(31 downto 0);
+					else 
+						rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 32));
+					end if;
+					temp := std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 33));
+					if (temp > max32) then 
+						rd(127 downto 96)<=max32(31 downto 0);	 
+					elsif (temp < min32) then
+						rd(127 downto 96)<=min32(31 downto 0);
+					else 
+						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
+					end if;
 				end if;
 			elsif sel(22 downto 20) = ("001" or "011") then --multiplies the high 16 bits of rs3 and rs2
 				mult_out(31 downto 0) := std_logic_vector(resize(signed(rs3(31 downto 16)) * signed(rs2(31 downto 16)), 32)); 
 				mult_out(63 downto 32) := std_logic_vector(resize(signed(rs3(63 downto 48)) * signed(rs2(63 downto 48)), 32));
 				mult_out(95 downto 64) := std_logic_vector(resize(signed(rs3(95 downto 80)) * signed(rs2(95 downto 80)), 32));
 				mult_out(127 downto 96) := std_logic_vector(resize(signed(rs3(127 downto 112)) * signed(rs2(127 downto 112)), 32));	  
-				if sel(22 downto 20) = "001" then --adds 32 bit product to 32 bit rs1
-					rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 32));  
-					rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 32));
-					rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 32));
-					rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 32));
+				if sel(22 downto 20) = "001" then --adds 32 bit product to 32 bit rs1  
+					temp := std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 33));
+					if (temp > max32) then 
+						rd(31 downto 0)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(31 downto 0)<=min32(31 downto 0);
+					else 
+						rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 32)); 
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 33));
+					if (temp > max32) then 
+						rd(63 downto 32)<=max32(31 downto 0);	
+					elsif (temp < min32) then
+						rd(63 downto 32)<=min32(31 downto 0);
+					else 
+						rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 32));
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 33));
+					if (temp > max32) then 
+						rd(95 downto 64)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(95 downto 64)<=min32(31 downto 0);
+					else 
+						rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 32));
+					end if;
+					temp := std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 33));
+					if (temp > max32) then 
+						rd(127 downto 96)<=max32(31 downto 0);	 
+					elsif (temp < min32) then
+						rd(127 downto 96)<=min32(31 downto 0);
+					else 
+						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 32));
+					end if;
 				elsif sel(22 downto 20) = "011" then --subtracts 32 bit product from 32 bit rs1
-					rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 32));  
-					rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 32));
-					rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 32));
-					rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
+					temp := std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 33));
+					if (temp > max32) then 
+						rd(31 downto 0)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(31 downto 0)<=min32(31 downto 0);
+					else 
+						rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) - signed(mult_out(31 downto 0)), 32)); 
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 33));
+					if (temp > max32) then 
+						rd(63 downto 32)<=max32(31 downto 0);	
+					elsif (temp < min32) then
+						rd(63 downto 32)<=min32(31 downto 0);
+					else 
+						rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) - signed(mult_out(63 downto 32)), 32));
+					end if;	
+					temp := std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 33));
+					if (temp > max32) then 
+						rd(95 downto 64)<=max32(31 downto 0);
+					elsif (temp < min32) then
+						rd(95 downto 64)<=min32(31 downto 0);
+					else 
+						rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) - signed(mult_out(95 downto 64)), 32));
+					end if;
+					temp := std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 33));
+					if (temp > max32) then 
+						rd(127 downto 96)<=max32(31 downto 0);	 
+					elsif (temp < min32) then
+						rd(127 downto 96)<=min32(31 downto 0);
+					else 
+						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
+					end if;
 				end if;
 			elsif sel(22 downto 20) = ("100" or "110") then --multiplies the low 32 bits of rs3 and rs2
 				mult_out(63 downto 0) := std_logic_vector(resize(signed(rs3(31 downto 0)) * signed(rs2(31 downto 0)), 64));
 				mult_out(127 downto 64) := std_logic_vector(resize(signed(rs3(95 downto 64)) * signed(rs2(95 downto 64)), 64));
-				if sel(22 downto 20) = "100" then --add 64 bit product to 64 bit rs1
-					rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64));
-					rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64));
+				if sel(22 downto 20) = "100" then --add 64 bit product to 64 bit rs1 
+					temp2 := std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 65));
+					if (temp2 > max64) then 
+						rd(63 downto 0)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(63 downto 0)<=min64(63 downto 0);
+					else 
+						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64)); 
+					end if;
+					temp2 := std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 65));
+					if (temp2 > max64) then 
+						rd(127 downto 64)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(127 downto 64)<=min64(63 downto 0);
+					else 
+						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64));
+					end if;
 				elsif sel(22 downto 20) = "110" then --subtracts 64 bit product from 64 bit rs1
-					rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64));
-					rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64));
+					temp2 := std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 65));
+					if (temp2 > max64) then 
+						rd(63 downto 0)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(63 downto 0)<=min64(63 downto 0);
+					else 
+						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64)); 
+					end if;
+					temp2 := std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 65));
+					if (temp2 > max64) then 
+						rd(127 downto 64)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(127 downto 64)<=min64(63 downto 0);
+					else 
+						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64));
+					end if;
 				end if;
 			elsif sel(22 downto 20) = ("101" or "111") then --multiplies the high 32 bits of rs3 and rs2
 				mult_out(63 downto 0) := std_logic_vector(resize(signed(rs3(63 downto 32)) * signed(rs2(63 downto 32)), 64));
 				mult_out(127 downto 64) := std_logic_vector(resize(signed(rs3(127 downto 96)) * signed(rs2(127 downto 96)), 64));
-				if sel(22 downto 20) = "101" then --adds 64 bit product to 64 bit rs1
-					rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64));
-					rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64));
+				if sel(22 downto 20) = "101" then --adds 64 bit product to 64 bit rs1 
+					temp2 := std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 65));
+					if (temp2 > max64) then 
+						rd(63 downto 0)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(63 downto 0)<=min64(63 downto 0);
+					else 
+						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64)); 
+					end if;
+					temp2 := std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 65));
+					if (temp2 > max64) then 
+						rd(127 downto 64)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(127 downto 64)<=min64(63 downto 0);
+					else 
+						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64));
+					end if;																						  
 				elsif sel(22 downto 20) = "111" then --subtracts 64 bit product from 64 bit rs1
-					rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64));
-					rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64));
+					temp2 := std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 65));
+					if (temp2 > max64) then 
+						rd(63 downto 0)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(63 downto 0)<=min64(63 downto 0);
+					else 
+						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64)); 
+					end if;
+					temp2 := std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 65));
+					if (temp2 > max64) then 
+						rd(127 downto 64)<=max64(63 downto 0);
+					elsif (temp2 < min64) then
+						rd(127 downto 64)<=min64(63 downto 0);
+					else 
+						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64));
+					end if;																						   
 				end if;
 			end if;		
 		elsif sel(24 downto 23) = "11" then
