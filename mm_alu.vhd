@@ -13,7 +13,6 @@ entity mm_alu is
 end mm_alu;
 
 architecture behavioral of mm_alu is 
-signal max, min, normal:std_logic;
 begin	
 	alu: process (rs2, rs3, rs1, sel) 	
 	variable mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication  
