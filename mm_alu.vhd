@@ -12,7 +12,8 @@ entity mm_alu is
     );
 end mm_alu;
 
-architecture behavioral of mm_alu is  
+architecture behavioral of mm_alu is 
+signal max, min, normal:std_logic;
 begin	
 	alu: process (rs2, rs3, rs1, sel) 	
 	variable mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication  
@@ -49,40 +50,43 @@ begin
 				rd(127 downto 112) <= sel(20 downto 5);
 			end if;
 		elsif sel(24 downto 23) = "10" then
-			if sel(22 downto 20) = ("000" or "010") then --multiplies the low 16 bits of rs3 and rs2
+			if (sel(22 downto 20) = "000" or sel(22 downto 20) = "010") then --multiplies the low 16 bits of rs3 and rs2
 				mult_out(31 downto 0) := std_logic_vector(resize(signed(rs3(15 downto 0)) * signed(rs2(15 downto 0)), 32));
 				mult_out(63 downto 32) := std_logic_vector(resize(signed(rs3(47 downto 32)) * signed(rs2(47 downto 32)), 32));
 				mult_out(95 downto 64) := std_logic_vector(resize(signed(rs3(79 downto 64)) * signed(rs2(79 downto 64)), 32));
 				mult_out(127 downto 96) := std_logic_vector(resize(signed(rs3(111 downto 96)) * signed(rs2(111 downto 96)), 32));
 				if sel(22 downto 20) = "000" then --adds 32 bit product to 32 bit rs1  
 					temp := std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 33));
-					if (temp > max32) then 
-						rd(31 downto 0)<=max32(31 downto 0);
-					elsif (temp < min32) then
+					if (to_integer(signed(temp)) > to_integer(signed(max32))) then 
+						rd(31 downto 0)<=max32(31 downto 0); 
+						max<='1';
+					elsif (to_integer(signed(temp)) < to_integer(signed(min32))) then
 						rd(31 downto 0)<=min32(31 downto 0);
+						min<='1';
 					else 
 						rd(31 downto 0) <= std_logic_vector(resize(signed(rs1(31 downto 0)) + signed(mult_out(31 downto 0)), 32)); 
+						normal<='1';
 					end if;	
 					temp := std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 33));
-					if (temp > max32) then 
+					if (to_integer(signed(temp)) > to_integer(signed(max32))) then 
 						rd(63 downto 32)<=max32(31 downto 0);	
-					elsif (temp < min32) then
+					elsif (to_integer(signed(temp)) < to_integer(signed(min32))) then
 						rd(63 downto 32)<=min32(31 downto 0);
 					else 
 						rd(63 downto 32) <= std_logic_vector(resize(signed(rs1(63 downto 32)) + signed(mult_out(63 downto 32)), 32));
 					end if;	
 					temp := std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 33));
-					if (temp > max32) then 
+					if (to_integer(signed(temp)) > to_integer(signed(max32))) then 
 						rd(95 downto 64)<=max32(31 downto 0);
-					elsif (temp < min32) then
+					elsif (to_integer(signed(temp)) < to_integer(signed(min32))) then
 						rd(95 downto 64)<=min32(31 downto 0);
 					else 
 						rd(95 downto 64) <= std_logic_vector(resize(signed(rs1(95 downto 64)) + signed(mult_out(95 downto 64)), 32));
 					end if;
 					temp := std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 33));
-					if (temp > max32) then 
+					if (to_integer(signed(temp)) > to_integer(signed(max32))) then 
 						rd(127 downto 96)<=max32(31 downto 0);	 
-					elsif (temp < min32) then
+					elsif (to_integer(signed(temp)) < to_integer(signed(min32))) then
 						rd(127 downto 96)<=min32(31 downto 0);
 					else 
 						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) + signed(mult_out(127 downto 96)), 32));
@@ -121,7 +125,7 @@ begin
 						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
 					end if;
 				end if;
-			elsif sel(22 downto 20) = ("001" or "011") then --multiplies the high 16 bits of rs3 and rs2
+			elsif (sel(22 downto 20) = "001" or sel(22 downto 20) = "011") then --multiplies the high 16 bits of rs3 and rs2
 				mult_out(31 downto 0) := std_logic_vector(resize(signed(rs3(31 downto 16)) * signed(rs2(31 downto 16)), 32)); 
 				mult_out(63 downto 32) := std_logic_vector(resize(signed(rs3(63 downto 48)) * signed(rs2(63 downto 48)), 32));
 				mult_out(95 downto 64) := std_logic_vector(resize(signed(rs3(95 downto 80)) * signed(rs2(95 downto 80)), 32));
@@ -193,7 +197,7 @@ begin
 						rd(127 downto 96) <= std_logic_vector(resize(signed(rs1(127 downto 96)) - signed(mult_out(127 downto 96)), 32));
 					end if;
 				end if;
-			elsif sel(22 downto 20) = ("100" or "110") then --multiplies the low 32 bits of rs3 and rs2
+			elsif (sel(22 downto 20) = "100" or sel(22 downto 20) = "110") then --multiplies the low 32 bits of rs3 and rs2
 				mult_out(63 downto 0) := std_logic_vector(resize(signed(rs3(31 downto 0)) * signed(rs2(31 downto 0)), 64));
 				mult_out(127 downto 64) := std_logic_vector(resize(signed(rs3(95 downto 64)) * signed(rs2(95 downto 64)), 64));
 				if sel(22 downto 20) = "100" then --add 64 bit product to 64 bit rs1 
@@ -231,7 +235,7 @@ begin
 						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64));
 					end if;
 				end if;
-			elsif sel(22 downto 20) = ("101" or "111") then --multiplies the high 32 bits of rs3 and rs2
+			elsif (sel(22 downto 20) = "101" or sel(22 downto 20) = "111") then --multiplies the high 32 bits of rs3 and rs2
 				mult_out(63 downto 0) := std_logic_vector(resize(signed(rs3(63 downto 32)) * signed(rs2(63 downto 32)), 64));
 				mult_out(127 downto 64) := std_logic_vector(resize(signed(rs3(127 downto 96)) * signed(rs2(127 downto 96)), 64));
 				if sel(22 downto 20) = "101" then --adds 64 bit product to 64 bit rs1 
