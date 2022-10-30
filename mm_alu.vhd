@@ -185,33 +185,41 @@ begin
 				mult_out(127 downto 64) := std_logic_vector(resize(signed(rs3(95 downto 64)) * signed(rs2(95 downto 64)), 64));
 				if sel(22 downto 20) = "100" then --add 64 bit product to 64 bit rs1 				
 					if (rs1(63) = '0' and mult_out(63) = '0' and signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)) < 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(63)<='0';
+						rd(62 downto 0)<=(others=>'1'); 
 					elsif (rs1(63) = '1' and mult_out(63) = '1' and signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)) > 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(63)<='1';
+						rd(62 downto 0)<=(others=>'0');
 					else 
 						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64)); 
 					end if;
 					
 					if (rs1(127) = '0' and mult_out(127) = '0' and signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)) < 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(127)<='0';
+						rd(126 downto 64)<=(others=>'1'); 
 					elsif (rs1(127) = '1' and mult_out(127) = '1' and signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)) > 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(127)<='1';
+						rd(126 downto 64)<=(others=>'0');
 					else 
 						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64)); 
 					end if;
 				elsif sel(22 downto 20) = "110" then --subtracts 64 bit product from 64 bit rs1
 					if (rs1(63) = '0' and mult_out(63) = '1' and signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)) < 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(63)<='0';
+						rd(62 downto 0)<=(others=>'1'); 
 					elsif (rs1(63) = '1' and mult_out(63) = '0' and signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)) > 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(63)<='1';
+						rd(62 downto 0)<=(others=>'0');
 					else 
 						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64)); 
 					end if;
 					
 					if (rs1(127) = '0' and mult_out(127) = '1' and signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)) < 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(127)<='0';
+						rd(126 downto 64)<=(others=>'1'); 
 					elsif (rs1(127) = '1' and mult_out(127) = '0' and signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)) > 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(127)<='1';
+						rd(126 downto 64)<=(others=>'0');
 					else 
 						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64)); 
 					end if;
@@ -221,33 +229,41 @@ begin
 				mult_out(127 downto 64) := std_logic_vector(resize(signed(rs3(127 downto 96)) * signed(rs2(127 downto 96)), 64));
 				if sel(22 downto 20) = "101" then --adds 64 bit product to 64 bit rs1 
 					if (rs1(63) = '0' and mult_out(63) = '0' and signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)) < 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(63)<='0';
+						rd(62 downto 0)<=(others=>'1'); 
 					elsif (rs1(63) = '1' and mult_out(63) = '1' and signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)) > 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(63)<='1';
+						rd(62 downto 0)<=(others=>'0');
 					else 
 						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) + signed(mult_out(63 downto 0)), 64)); 
 					end if;
 					
 					if (rs1(127) = '0' and mult_out(127) = '0' and signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)) < 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(127)<='0';
+						rd(126 downto 64)<=(others=>'1'); 
 					elsif (rs1(127) = '1' and mult_out(127) = '1' and signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)) > 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(127)<='1';
+						rd(126 downto 64)<=(others=>'0');
 					else 
 						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) + signed(mult_out(127 downto 64)), 64)); 
 					end if;																						  
 				elsif sel(22 downto 20) = "111" then --subtracts 64 bit product from 64 bit rs1
 					if (rs1(63) = '0' and mult_out(63) = '1' and signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)) < 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(63)<='0';
+						rd(62 downto 0)<=(others=>'1'); 
 					elsif (rs1(63) = '1' and mult_out(63) = '0' and signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)) > 0) then
-						rd(63 downto 0)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(63)<='1';
+						rd(62 downto 0)<=(others=>'0');
 					else 
 						rd(63 downto 0) <= std_logic_vector(resize(signed(rs1(63 downto 0)) - signed(mult_out(63 downto 0)), 64)); 
 					end if;
 					
 					if (rs1(127) = '0' and mult_out(127) = '1' and signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)) < 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed((2**63)-1, 64)); 
+						rd(127)<='0';
+						rd(126 downto 64)<=(others=>'1'); 
 					elsif (rs1(127) = '1' and mult_out(127) = '0' and signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)) > 0) then
-						rd(127 downto 64)<=std_logic_vector(to_signed(-(2**63), 64));
+						rd(127)<='1';
+						rd(126 downto 64)<=(others=>'0');
 					else 
 						rd(127 downto 64) <= std_logic_vector(resize(signed(rs1(127 downto 64)) - signed(mult_out(127 downto 64)), 64)); 
 					end if;																						   
