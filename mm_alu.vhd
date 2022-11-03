@@ -527,3 +527,73 @@ begin
 	end process alu;
 	
 end architecture behavioral;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity decoder is
+	port( 
+	instr : in std_logic_vector(24 downto 0);
+	register_write : in std_logic_vector(127 downto 0);
+	rs1: out std_logic_vector(127 downto 0); 
+	rs2: out std_logic_vector(127 downto 0); 
+	rs3: out std_logic_vector(127 downto 0);
+	sel: out std_logic_vector(24 downto 0)
+    );
+end decoder;
+
+architecture behavioral of decoder is 
+type register_array is array (31 downto 0) of std_logic_vector(127 downto 0);
+signal reg : register_array;  		 --array of all 32 128-bit registers
+signal oldInstr : std_logic_vector(24 downto 0) := (others=>'0');	--stores previous instruction
+begin
+	decode: process (instr, register_write)
+	variable index:integer:=0;			--stores the index of which register to be accessed
+	begin	   
+		index:= to_integer(unsigned(instr(9 downto 5)));
+		rs1 <= std_logic_vector(reg(index)); 		   
+		index:= to_integer(unsigned(instr(14 downto 10)));
+		rs2 <= std_logic_vector(reg(index));	 
+		index:= to_integer(unsigned(instr(19 downto 15)));
+		rs3 <= std_logic_vector(reg(index));
+		sel <= instr;
+		if(oldInstr = "0000000000000000000000000") then	  --when there is no old instruction, bc the default is all 0's, then there is no write back
+			--do nothing
+		else											  --otherwise using the rd of the old instruction, save the write back to that register
+			index:= to_integer(unsigned(oldInstr(4 downto 0)));
+			reg(index) <= register_write;
+		end if;
+		oldInstr <= instr;				   --save this instruction as the old instruction
+	end process;	
+end architecture behavioral;	
+
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity instruction_fetcher is
+	port( 	 
+	    clk: in std_logic;
+		instr: out std_logic_vector(24 downto 0)
+    );
+end instruction_fetcher;
+
+architecture behavioral of instruction_fetcher is 
+type instr_array is array (63 downto 0) of std_logic_vector(27 downto 0);
+signal instructions : instr_array:= (x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73", x"182ef73", x"1835f73", x"183ef73", x"1845f73", x"184ef73", x"1855f73", x"185ef73", x"1865f73", x"186ef73", x"1875f73", x"187ef73", x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73", x"182ef73", x"1835f73", x"183ef73", x"1845f73", x"184ef73", x"1855f73", x"185ef73", x"1865f73", x"186ef73", x"1875f73", x"187ef73", x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73");  		 --array of all 64 25-bit instructions	
+signal index:integer:=0;
+begin
+	fetch: process (clk)
+	begin	   
+		instr<=instructions(index)(24 downto 0);	 
+		if(index = 63) then
+			index<=0;
+		else
+			index<=index+1;
+		end if;
+	end process;	
+end architecture behavioral;
+
