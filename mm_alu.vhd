@@ -587,13 +587,52 @@ signal instructions : instr_array:= (x"09e881c",x"10a5f65", x"11a5f65", x"12a5f6
 signal index:integer:=0;
 begin
 	fetch: process (clk)
-	begin	   
-		instr<=instructions(index)(24 downto 0);	 
-		if(index = 63) then
-			index<=0;
-		else
-			index<=index+1;
+	begin
+		if rising_edge(clk) then
+			instr<=instructions(index)(24 downto 0);	 
+			if(index = 63) then
+				index<=0;
+			else
+				index<=index+1;
+			end if;
 		end if;
 	end process;	
 end architecture behavioral;
 
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity data_forwarding is
+	port( 	 
+		rs1: in std_logic_vector(127 downto 0);
+		rs2: in std_logic_vector(127 downto 0);
+		rs3: in std_logic_vector(127 downto 0);
+		newInstr: in std_logic_vector(24 downto 0);	  
+		currentInstr: in std_logic_vector(24 downto 0);	
+		mmAluOut: in std_logic_vector(127 downto 0);  
+		rs1_out: out std_logic_vector(127 downto 0);
+		rs2_out: out std_logic_vector(127 downto 0);
+		rs3_out: out std_logic_vector(127 downto 0);		
+    );
+end data_forwarding;
+
+architecture behavioral of data_forwarding is 
+begin
+	forward: process (newInstr, currentInstr)
+	begin	   
+		if (currentInstr(4 downto 0) = newInstr(9 downto 5)) then
+			rs1_out <= mmAluOut;
+			rs2_out <= rs2;
+		elsif (currentInstr(4 downto 0) = newInstr(14 downto 10)) then		
+			rs2_out <= mmAluOut;
+			rs1_out <= rs1;
+		else
+			rs1_out <= rs1;
+			rs2_out <= rs2;
+		end if;
+		rs3_out <= rs3;
+	end process;	
+end architecture behavioral;
