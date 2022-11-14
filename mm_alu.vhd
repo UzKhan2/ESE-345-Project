@@ -8,6 +8,7 @@ entity mm_alu is
 	rs2: in std_logic_vector(127 downto 0); 
 	rs3: in std_logic_vector(127 downto 0);
 	sel: in std_logic_vector(24 downto 0);
+	currentInstr: out std_logic_vector(24 downto 0);
 	rd: out std_logic_vector(127 downto 0)
     );
 end mm_alu;
@@ -20,7 +21,8 @@ begin
 	variable ones0, ones1, ones2, ones3 : std_logic_vector(31 downto 0) := (others => '0'); --counts number of 1's in each 32 bit section of rs1
 	variable rot : integer; --holds the number of rotations needed based on the 32 bit sections of rs2
 	variable rs1ror : std_logic_vector(127 downto 0) := (others => '0'); --holds rs1 and rotates it	 
-	begin	
+	begin
+		currentInstr<=sel;
 		if sel(24) = '0' then  --load immediate to the sel(20 downto 5)'th section of rd's 16 bit sections
 			if sel(23 downto 21) = "000" then
 				rd(15 downto 0) <= sel(20 downto 5);
@@ -584,16 +586,16 @@ end instruction_fetcher;
 architecture behavioral of instruction_fetcher is 
 type instr_array is array (63 downto 0) of std_logic_vector(27 downto 0);
 signal instructions : instr_array:= (x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73", x"182ef73", x"1835f73", x"183ef73", x"1845f73", x"184ef73", x"1855f73", x"185ef73", x"1865f73", x"186ef73", x"1875f73", x"187ef73", x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73", x"182ef73", x"1835f73", x"183ef73", x"1845f73", x"184ef73", x"1855f73", x"185ef73", x"1865f73", x"186ef73", x"1875f73", x"187ef73", x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73");  		 --array of all 64 25-bit instructions	
-signal index:integer:=0;
+signal PC:integer:=0; --program counter
 begin
 	fetch: process (clk)
 	begin
 		if rising_edge(clk) then
-			instr<=instructions(index)(24 downto 0);	 
-			if(index = 63) then
-				index<=0;
+			instr<=instructions(PC)(24 downto 0);	 
+			if(PC = 63) then
+				PC<=0;
 			else
-				index<=index+1;
+				PC<=PC+1;
 			end if;
 		end if;
 	end process;	
@@ -615,7 +617,8 @@ entity data_forwarding is
 		mmAluOut: in std_logic_vector(127 downto 0);  
 		rs1_out: out std_logic_vector(127 downto 0);
 		rs2_out: out std_logic_vector(127 downto 0);
-		rs3_out: out std_logic_vector(127 downto 0);		
+		rs3_out: out std_logic_vector(127 downto 0);
+		instruction_out: out std_logic_vector(24 downto 0)
     );
 end data_forwarding;
 
@@ -633,6 +636,57 @@ begin
 			rs1_out <= rs1;
 			rs2_out <= rs2;
 		end if;
-		rs3_out <= rs3;
+		rs3_out <= rs3;	
+		instruction_out <= newInstr;
 	end process;	
 end architecture behavioral;
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+use work.all;
+
+entity four_stage_pipelined_multimedia_unit is
+	port(
+	clk: in std_logic;
+	reset: in std_logic
+	);
+end four_stage_pipelined_multimedia_unit;
+
+architecture structural of four_stage_pipelined_multimedia is	 
+signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_alu: std_logic_vector(24 downto 0); 
+signal rs1, rs2, rs3, rs1_d1, rs2_d1, rs3_d1, rs1_f, rs2_f, rs3_f, write_back: std_logic_vector(127 downto 0);  
+begin		
+	u0: entity instruction_fetcher port map(clk=>clk, instr=>instr);
+	
+	ifid_reg: process (clk)
+	begin 
+		if(reset=1) then
+			instr_d1<=0;
+		elsif(rising_edge(clk)) then
+			instr_d1<=instr; 
+		end if;
+	end process;  
+								  
+	u1: entity decoder port map(instr=>instr_d1, register_write=>write_back, rs1=>rs1, rs2=>rs2, rs3=>rs3, sel=>instruction);
+		
+	idex_reg: process (clk)
+	begin 
+		if(reset=1) then
+			rs1_d1<=0;
+			rs2_d1<=0;
+			rs3_d1<=0;
+			instruction_d1<=0;
+		elsif(rising_edge(clk)) then
+			rs1_d1<=rs1;
+			rs2_d1<=rs2;
+			rs3_d1<=rs3;
+			instruction_d1<=instruction;
+		end if;
+	end process;
+	
+	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, newInstr=>instruction_d1, currentInstr=>instruction_alu, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, instruction_out=>instruction_f);
+		
+	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, sel=>instruction_f, 
+	
+end architecture
