@@ -8,7 +8,6 @@ entity mm_alu is
 	rs2: in std_logic_vector(127 downto 0); 
 	rs3: in std_logic_vector(127 downto 0);
 	sel: in std_logic_vector(24 downto 0);
-	currentInstr: out std_logic_vector(24 downto 0);
 	rd: out std_logic_vector(127 downto 0)
     );
 end mm_alu;
@@ -22,7 +21,6 @@ begin
 	variable rot : integer; --holds the number of rotations needed based on the 32 bit sections of rs2
 	variable rs1ror : std_logic_vector(127 downto 0) := (others => '0'); --holds rs1 and rotates it	 
 	begin
-		currentInstr<=sel;
 		if sel(24) = '0' then  --load immediate to the sel(20 downto 5)'th section of rd's 16 bit sections
 			if sel(23 downto 21) = "000" then
 				rd(15 downto 0) <= sel(20 downto 5);
@@ -653,16 +651,16 @@ entity four_stage_pipelined_multimedia_unit is
 	);
 end four_stage_pipelined_multimedia_unit;
 
-architecture structural of four_stage_pipelined_multimedia is	 
-signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_alu: std_logic_vector(24 downto 0); 
-signal rs1, rs2, rs3, rs1_d1, rs2_d1, rs3_d1, rs1_f, rs2_f, rs3_f, write_back: std_logic_vector(127 downto 0);  
+architecture structural of four_stage_pipelined_multimedia_unit is	 
+signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0); 
+signal rs1, rs2, rs3, rs1_d1, rs2_d1, rs3_d1, rs1_f, rs2_f, rs3_f, rd, write_back: std_logic_vector(127 downto 0);  
 begin		
 	u0: entity instruction_fetcher port map(clk=>clk, instr=>instr);
 	
 	ifid_reg: process (clk)
 	begin 
-		if(reset=1) then
-			instr_d1<=0;
+		if(reset='1') then
+			instr_d1<=(others=>'0');
 		elsif(rising_edge(clk)) then
 			instr_d1<=instr; 
 		end if;
@@ -672,11 +670,11 @@ begin
 		
 	idex_reg: process (clk)
 	begin 
-		if(reset=1) then
-			rs1_d1<=0;
-			rs2_d1<=0;
-			rs3_d1<=0;
-			instruction_d1<=0;
+		if(reset='1') then
+			rs1_d1<=(others=>'0');
+			rs2_d1<=(others=>'0');
+			rs3_d1<=(others=>'0');
+			instruction_d1<=(others=>'0');
 		elsif(rising_edge(clk)) then
 			rs1_d1<=rs1;
 			rs2_d1<=rs2;
@@ -685,8 +683,19 @@ begin
 		end if;
 	end process;
 	
-	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, newInstr=>instruction_d1, currentInstr=>instruction_alu, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, instruction_out=>instruction_f);
+	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, newInstr=>instruction_d1, currentInstr=>instruction_fd1, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, instruction_out=>instruction_f);
 		
-	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, sel=>instruction_f, 
+	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, sel=>instruction_f, rd=>rd);
+		
+	exwb_reg: process (clk)
+	begin 
+		if(reset='1') then
+			instruction_fd1<=(others=>'0');
+			write_back<=(others=>'0');	   
+		elsif(rising_edge(clk)) then
+			write_back<=rd;
+			instruction_fd1<=instruction_f;
+		end if;
+	end process;
 	
-end architecture
+end architecture structural;
