@@ -528,6 +528,8 @@ begin
 	
 end architecture behavioral;
 
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -536,6 +538,7 @@ entity decoder is
 	port( 
 	instr : in std_logic_vector(24 downto 0);
 	register_write : in std_logic_vector(127 downto 0);
+	oldInstr : in std_logic_vector(24 downto 0);
 	rs1: out std_logic_vector(127 downto 0); 
 	rs2: out std_logic_vector(127 downto 0); 
 	rs3: out std_logic_vector(127 downto 0);
@@ -545,8 +548,39 @@ end decoder;
 
 architecture behavioral of decoder is 
 type register_array is array (31 downto 0) of std_logic_vector(127 downto 0);
-signal reg : register_array;  		 --array of all 32 128-bit registers
-signal oldInstr : std_logic_vector(24 downto 0) := (others=>'0');	--stores previous instruction
+signal reg : register_array:= (
+"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"01101100000010101111000001001100011001010010010100010011111010010111100001000001001111110001010011111010010101010001110000000001",
+"00101010101011011100011110101100110101010001101110001010100000100111010100101001101001001100101010011101000001101000110110101011",
+"01000110111010011010001111000101111100101001101111101100011101101101110001100000000101100110000110101010111000010101110001111010",
+"00101011100101011100010011100111101100001100001011000011010111001101110110000101111001000000000111100000000111101110011011110000",
+"10111000100010000100010111111001000000001110111011111011000010101101101100100011010100101110100111000000111001010111000000011101",
+"11011010101100100011001001110101100001100101100100000101011101110100001010010110100010110000110100001000110100001111110011001001",
+"11100011111111001000110110001110111100001100111100101101011101001010110001011100001101010111101010100010111111100100101010100111",
+"10101000101110100101001000111101110110100101001010001111011001100100110110110110111100111010011011010101001000001111100001001011",
+"00110111011101110110011100110100111001010010110101001110001011011010011111011111110100000101001010000000110000110101011100110100",
+"00101000010000111010001001010001101010000000111101110110000001001110000111100101011001101111011100001111111101110010000011100110",
+"11001011011010111110101101101110000101110111010101100111101010100010100011000111000000100011011011101010101000000000010001101001",
+"00000100110100000010010101100101011111111110111010110011110101000110101001100010011000011110001001000000000011000010000000110011",
+"11010101100011111011011000011110011101110100000010110110101001001000001110000000011000101100011001000010001001110110001010001000",
+"00010011000001101100011100001110110100111101001111000000001111011110000001110010110000101100111010100010001010100100011011011110",
+"00001100001110010110010010110001100100111110101011100111000101100101001101111101011011110101011001110111111111100001010111000001",
+"11010001001111010101101011111111100010000000000100110011010100001111110110011111101111110110100011111101101100110011000100101000",
+"00010101010001110010101011011101111100000110100100010110001100111111110001101011101110010111011101010000000101100111001100001101",
+"11000101110111011110000101000101011011110010010011011000100011110101100110011111111001011100010011100000100011000010101101101100",
+"01001010000100000111000110001001000101101111000110101001110011000101100111010111100100101000111011101100100110111100000010101111",
+"00001110011111100110111010100100111100010000011000101001001110000011000100001100010010100010011110110001101111100110101101100100",
+"00111011000110010111000001000111011001100101001100100111001001100110110010101000101111001111101100101001110111000001010111100111",
+"11111010111100010000100100001100011001000001100101010101011100011000010111100100100100101100010101011110101000101010000101110101",
+"10001100111110110100110101111110000000101010100011011101010110101100100111001101110010001010110011000100011110100101001001011010",
+"11111111100101100001000010011101100110001110001010111010101001001111001101011100000000000001011110010111110001010010101001000110",
+"10000100100011110100001010110000101010001111011001111000000001001101001100010010010010111010011011011101011001000010011100000100",
+"01110010011000010100111110000111111100111010101001011001011111101000111000110101010110111100001011001100100100000100100000110110",
+"01110001101011110111110010000111001110010000110001000100010110011110101110100101000001101011000110101001000010101001110101010111",
+"11101110010000000110101101010100010110101011111100101101111000111111000011101111010000001111111011011111001010001100000001001110",
+"00101001010011000110110101001001011010110011000011011111011001100000101000000010000111000110001111001010111010010011110110001111",
+"10000111010111001100111011011000101000101011111011100011000000011100101100100101000010110111111000010010101111110100100000110110",
+"00011010010100000010101110000100111101111001111000100110000011010000101010000111101110100110111110001111101010011010010011001010");  		 --array of all 32 128-bit registers					
 begin
 	decode: process (instr, register_write)
 	variable index:integer:=0;			--stores the index of which register to be accessed
@@ -558,13 +592,12 @@ begin
 		index:= to_integer(unsigned(instr(19 downto 15)));
 		rs3 <= std_logic_vector(reg(index));
 		sel <= instr;
-		if(oldInstr = "0000000000000000000000000") then	  --when there is no old instruction, bc the default is all 0's, then there is no write back
+		if(oldInstr = "UUUUUUUUUUUUUUUUUUUUUUUUU") then	  --when there is no old instruction, bc the default is all 0's, then there is no write back
 			--do nothing
 		else											  --otherwise using the rd of the old instruction, save the write back to that register
 			index:= to_integer(unsigned(oldInstr(4 downto 0)));
 			reg(index) <= register_write;
-		end if;
-		oldInstr <= instr;				   --save this instruction as the old instruction
+		end if;																  
 	end process;	
 end architecture behavioral;	
 
@@ -575,17 +608,29 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity instruction_fetcher is
-	port( 	 
-	    clk: in std_logic;
+	port( 	
+		instruction_array: in std_logic_vector(24 downto 0);
+	     clk: in std_logic;
 		instr: out std_logic_vector(24 downto 0)
     );
 end instruction_fetcher;
 
 architecture behavioral of instruction_fetcher is 
-type instr_array is array (63 downto 0) of std_logic_vector(27 downto 0);
-signal instructions : instr_array:= (x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73", x"182ef73", x"1835f73", x"183ef73", x"1845f73", x"184ef73", x"1855f73", x"185ef73", x"1865f73", x"186ef73", x"1875f73", x"187ef73", x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73", x"182ef73", x"1835f73", x"183ef73", x"1845f73", x"184ef73", x"1855f73", x"185ef73", x"1865f73", x"186ef73", x"1875f73", x"187ef73", x"09e881c",x"10a5f65", x"11a5f65", x"12a5f65", x"13a5f65", x"14a5f65", x"15a5f65", x"16a5f65", x"17a5f65", x"1805f73", x"180ef73", x"1815f73", x"181ef73", x"1825f73");  		 --array of all 64 25-bit instructions	
-signal PC:integer:=0; --program counter
-begin
+type instr_array is array (63 downto 0) of std_logic_vector(24 downto 0);
+signal instructions : instr_array;
+signal PC:integer:=0; --program counter	
+--signal index:integer:=0; --loading counter
+begin  
+	load: process(instruction_array)   
+	variable index:integer:=0;
+	begin
+		if(index>63) then
+			index:=0;
+		end if;
+		instructions(index)<=instruction_array;	 
+		index:=index+1;
+	end process;
+	
 	fetch: process (clk)
 	begin
 		if rising_edge(clk) then
@@ -623,19 +668,33 @@ end data_forwarding;
 architecture behavioral of data_forwarding is 
 begin
 	forward: process (newInstr, currentInstr)
-	begin	   
-		if (currentInstr(4 downto 0) = newInstr(9 downto 5)) then
+	begin	
+		if newInstr(24)='0' then
+			rs1_out <= rs1;
+			rs2_out <= rs2;
+			rs3_out <= rs3;
+			instruction_out <= newInstr;
+		elsif (currentInstr(4 downto 0) = newInstr(9 downto 5)) then
 			rs1_out <= mmAluOut;
 			rs2_out <= rs2;
+			rs3_out <= rs3;	
+			instruction_out <= newInstr;
 		elsif (currentInstr(4 downto 0) = newInstr(14 downto 10)) then		
 			rs2_out <= mmAluOut;
 			rs1_out <= rs1;
+			rs3_out <= rs3;	 
+			instruction_out <= newInstr;
+		elsif (currentInstr(4 downto 0) = newInstr(19 downto 15)) then
+			rs3_out <= mmAluOut;
+			rs1_out <= rs1;
+			rs2_out <= rs2;
+			instruction_out <= newInstr;
 		else
 			rs1_out <= rs1;
 			rs2_out <= rs2;
-		end if;
-		rs3_out <= rs3;	
-		instruction_out <= newInstr;
+			rs3_out <= rs3;
+			instruction_out <= newInstr;
+		end if;	
 	end process;	
 end architecture behavioral;
 
@@ -645,9 +704,11 @@ use ieee.numeric_std.all;
 use work.all;
 
 entity four_stage_pipelined_multimedia_unit is
-	port(
+	port(	
+	instruction_array: in std_logic_vector(24 downto 0);
 	clk: in std_logic;
-	reset: in std_logic
+	reset: in std_logic;
+	mmOut: out std_logic_vector(127 downto 0)
 	);
 end four_stage_pipelined_multimedia_unit;
 
@@ -655,7 +716,7 @@ architecture structural of four_stage_pipelined_multimedia_unit is
 signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0); 
 signal rs1, rs2, rs3, rs1_d1, rs2_d1, rs3_d1, rs1_f, rs2_f, rs3_f, rd, write_back: std_logic_vector(127 downto 0);  
 begin		
-	u0: entity instruction_fetcher port map(clk=>clk, instr=>instr);
+	u0: entity instruction_fetcher port map(instruction_array=>instruction_array, clk=>clk, instr=>instr);
 	
 	ifid_reg: process (clk)
 	begin 
@@ -666,7 +727,7 @@ begin
 		end if;
 	end process;  
 								  
-	u1: entity decoder port map(instr=>instr_d1, register_write=>write_back, rs1=>rs1, rs2=>rs2, rs3=>rs3, sel=>instruction);
+	u1: entity decoder port map(instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, sel=>instruction);
 		
 	idex_reg: process (clk)
 	begin 
@@ -695,6 +756,7 @@ begin
 		elsif(rising_edge(clk)) then
 			write_back<=rd;
 			instruction_fd1<=instruction_f;
+			mmOut<=rd;
 		end if;
 	end process;
 	
