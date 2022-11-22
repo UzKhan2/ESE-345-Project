@@ -1,15 +1,11 @@
 #include <iostream>
 #include <string>
-#include <string.h>
 #include <fstream>
 #include <sstream>
-#include <vector>
-#include<bits/stdc++.h>
 using namespace std;
 
 string convert(string rd);
-string convert3(string li);
-string convert16(string im);
+string convertnum(string num, int len);
 
 int main()
 {
@@ -21,11 +17,9 @@ int main()
 	while (getline(inputFile, line))
 	{
 		string tempString = "";
-//		cout << line << endl;
 		stringstream inputString(line);
 
 		getline(inputString, instr, ' ');
-//		cout << instr << endl;
 		line = "";
 	/*------------------------------Load Immediate--------------------------*/
 	if (instr == "LDI")
@@ -36,8 +30,8 @@ int main()
 		getline(inputString, li, ',');
 	   	getline(inputString, im, ',');
 	   	outputFile << opcode;
-	   	outputFile << convert3(li);
-	   	outputFile << convert16(im);
+	   	outputFile << convertnum(li, 2);
+	   	outputFile << convertnum(im, 15);
 	   	outputFile << convert(rd) << endl;
 	   }
 	/*------------------------------R4 Instructions--------------------------*/
@@ -320,7 +314,6 @@ int main()
 	{
 		outputFile << "ERROR TRANSLATING";	
 	}
-
 	}
 return 0;
 }
@@ -338,58 +331,32 @@ string convert(string rd)
         int k = value >> i;
         if (k & 1)
         {
-            //cout << "1";
     		output.append(one);
     	}
         else
         {
-            //cout << "0";
             output.append(zero);
         }
     }
 return output;	
 }
-string convert3(string li)
+
+string convertnum(string num, int len)
 {
-	string sub = li.substr(0);
+	string sub = num.substr(0);
 	int value = stoi(sub);
 	string one ="1";
 	string zero = "0";
 	string output ="";
-	for (int i =2; i >= 0; i--)
+	for (int i = len; i >= 0; i--)
 	{
         int k = value >> i;
         if (k & 1)
         {
-            //cout << "1";
     		output.append(one);
     	}
         else
         {
-            //cout << "0";
-            output.append(zero);
-        }
-    }
-return output;	
-}
-string convert16(string im)
-{
-	string sub = im.substr(0);
-	int value = stoi(sub);
-	string one ="1";
-	string zero = "0";
-	string output ="";
-	for (int i = 15; i >= 0; i--)
-	{
-        int k = value >> i;
-        if (k & 1)
-        {
-            //cout << "1";
-    		output.append(one);
-    	}
-        else
-        {
-            //cout << "0";
             output.append(zero);
         }
     }
