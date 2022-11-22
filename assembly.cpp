@@ -230,7 +230,7 @@ int main()
 	   }
 	else if (instr == "MINWS")
 	   {
-	   	opcode = "110001000";
+	   	opcode = "1100001000";
 		getline(inputString, rd, ',');
 		getline(inputString, rs1, ',');
 		getline(inputString, rs2, ',');
