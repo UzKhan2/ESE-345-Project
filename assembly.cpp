@@ -316,6 +316,10 @@ int main()
 		outputFile << convert(rs1);
 		outputFile << convert(rd) << endl;
 		}
+	else 
+	{
+		outputFile << "ERROR TRANSLATING";	
+	}
 
 	}
 return 0;
