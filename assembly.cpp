@@ -323,9 +323,15 @@ string convert(string rd)
 	int pos = rd.find("$");	
 	string sub = rd.substr(pos + 1);
 	int value = stoi(sub);
+	
 	string one ="1";
 	string zero = "0";
 	string output ="";
+	if (value > 31 || value < 0)
+	{
+		output = "ERROR";
+		return output;
+	}
 	for (int i = 4; i >= 0; i--)
 	{
         int k = value >> i;
