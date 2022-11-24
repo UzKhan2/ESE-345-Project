@@ -31,11 +31,11 @@ begin
 	begin  						  
 		if(h = 0) then 
 			file_open(instr_vector, file_name, read_mode);						   
-			while((not endfile(instr_vector)) and (h<25)) loop
+			while((not endfile(instr_vector)) and (h<64)) loop
 				readline(instr_vector, row);   
 				read(row, vect);
 				instruction_array <= vect; --add value from test file  
-				if (h = 24) then
+				if (h = 63) then
 					done_loading <= '1';
 				end if;
 				h:=h+1;	
@@ -150,8 +150,8 @@ begin
 	clock: process
 	begin  
 		wait until done_loading = '1';
-		for i in 0 to 100 loop
-			if(i=100) then
+		for i in 0 to 200 loop
+			if(i=200) then
 				done<='1';
 			end if;
 			clk <= not clk;
