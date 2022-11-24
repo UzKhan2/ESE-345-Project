@@ -580,7 +580,8 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity decoder is
-	port( 
+	port( 			   
+	done : in std_logic;
 	instr : in std_logic_vector(24 downto 0);
 	register_write : in std_logic_vector(127 downto 0);
 	oldInstr : in std_logic_vector(24 downto 0);
@@ -588,7 +589,8 @@ entity decoder is
 	rs2: out std_logic_vector(127 downto 0); 
 	rs3: out std_logic_vector(127 downto 0);
 	rd: out std_logic_vector(127 downto 0);
-	sel: out std_logic_vector(24 downto 0)
+	sel: out std_logic_vector(24 downto 0);
+	register_status: out std_logic_vector(127 downto 0)
     );
 end decoder;
 
@@ -646,7 +648,18 @@ begin
 			index:= to_integer(unsigned(oldInstr(4 downto 0)));
 			reg(index) <= register_write;
 		end if;																  
+	end process;	  
+	
+	show_regs: process
+	begin 
+		wait until done = '1';
+		for reg_num in 0 to 31 loop
+			register_status<=reg(reg_num);
+			wait for 20 ns;
+		end loop; 
+		wait;
 	end process;	
+	
 end architecture behavioral;	
 
 
@@ -718,14 +731,22 @@ entity four_stage_pipelined_multimedia_unit is
 	port(	
 	instruction_array: in std_logic_vector(24 downto 0);
 	clk: in std_logic;
-	reset: in std_logic;
-	mmOut: out std_logic_vector(127 downto 0)
+	reset: in std_logic;   
+	done: in std_logic;
+	mmOut: out std_logic_vector(127 downto 0);
+	rs1_d1_check: out std_logic_vector(127 downto 0);
+	rs2_d1_check: out std_logic_vector(127 downto 0);
+	rs3_d1_check: out std_logic_vector(127 downto 0);
+	instruction_d1_check: out std_logic_vector(24 downto 0);
+	instr_d1_check: out std_logic_vector(24 downto 0);
+	instruction_fd1_check: out std_logic_vector(24 downto 0);
+	register_status: out std_logic_vector(127 downto 0)
 	);
 end four_stage_pipelined_multimedia_unit;
 
 architecture structural of four_stage_pipelined_multimedia_unit is	 
 signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0):=(others=>'0'); 
-signal rs1, rs2, rs3, rd, rs1_d1, rs2_d1, rs3_d1, rd_d1, rs1_f, rs2_f, rs3_f, rd_f, rd_out, write_back: std_logic_vector(127 downto 0):=(others=>'0');  
+signal rs1, rs2, rs3, rd, rs1_d1, rs2_d1, rs3_d1, rd_d1, rs1_f, rs2_f, rs3_f, rd_f, rd_out, write_back: std_logic_vector(127 downto 0):=(others=>'0'); 
 begin		
 	u0: entity instruction_fetcher port map(instruction_array=>instruction_array, clk=>clk, instr=>instr);
 	
@@ -734,11 +755,12 @@ begin
 		if(reset='1') then
 			instr_d1<=(others=>'0');
 		elsif(rising_edge(clk)) then
-			instr_d1<=instr; 
+			instr_d1<=instr;
+			instr_d1_check<=instr;
 		end if;
 	end process;  
 								  
-	u1: entity decoder port map(instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, rd=>rd, sel=>instruction);
+	u1: entity decoder port map(done=>done, instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, rd=>rd, sel=>instruction, register_status=>register_status);
 		
 	idex_reg: process (reset, clk)
 	begin 
@@ -753,7 +775,11 @@ begin
 			rs2_d1<=rs2;
 			rs3_d1<=rs3; 
 			rd_d1<=rd;
-			instruction_d1<=instruction;
+			instruction_d1<=instruction; 
+			rs1_d1_check<=rs1;	
+			rs2_d1_check<=rs2;
+			rs3_d1_check<=rs3;
+			instruction_d1_check<=instruction;
 		end if;
 	end process;
 	
@@ -770,7 +796,8 @@ begin
 		elsif(rising_edge(clk)) then
 			write_back<=rd_out;
 			instruction_fd1<=instruction_f;
-			mmOut<=rd_out;
+			mmOut<=rd_out; 
+			instruction_fd1_check<=instruction_f;
 		end if;
 	end process;
 	
