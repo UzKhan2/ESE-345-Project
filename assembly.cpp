@@ -10,7 +10,7 @@ string convertnum(string num, int len);
 int main()
 {
 	ifstream inputFile ("C:\\Users\\UZAIR\\Downloads\\instructions.txt");
-	ofstream outputFile("C:\\Users\\UZAIR\\Downloads\\bininstructions.txt");
+	ofstream outputFile("C:\\Users\\UZAIR\\Downloads\\binary_instructions.txt");
 	string instr, rd, rs1, rs2, rs3, opcode;
 	
 	string line = "";
