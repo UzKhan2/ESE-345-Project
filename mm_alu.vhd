@@ -6,21 +6,23 @@ entity mm_alu is
 	port( 
 	rs1 : in std_logic_vector(127 downto 0);
 	rs2: in std_logic_vector(127 downto 0); 
-	rs3: in std_logic_vector(127 downto 0);
+	rs3: in std_logic_vector(127 downto 0);	
+	rd_in: in std_logic_vector(127 downto 0);
 	sel: in std_logic_vector(24 downto 0);
-	rd: out std_logic_vector(127 downto 0)
+	rd_out: out std_logic_vector(127 downto 0)
     );
 end mm_alu;
 
-architecture behavioral of mm_alu is 
+architecture behavioral of mm_alu is 		    
+signal rd:std_logic_vector(127 downto 0):=(others=>'0');
 begin	
-	alu: process (rs2, rs3, rs1, sel) 	
+	alu: process (rs2, rs3, rs1, rd_in, sel) 	
 	variable mult_out : std_logic_vector(127 downto 0); --holds the output of the multiplication  
 	variable clz0, clz1, clz2, clz3 : std_logic_vector(31 downto 0) := (others => '0');	--counts leading 0's in each 32 bit section of rs1
 	variable ones0, ones1, ones2, ones3 : std_logic_vector(31 downto 0) := (others => '0'); --counts number of 1's in each 32 bit section of rs1
 	variable rot : integer; --holds the number of rotations needed based on the 32 bit sections of rs2
 	variable rs1ror : std_logic_vector(127 downto 0) := (others => '0'); --holds rs1 and rotates it	 
-	begin
+	begin	
 		if sel(24) = '0' then  --load immediate to the sel(20 downto 5)'th section of rd's 16 bit sections
 			if sel(23 downto 21) = "000" then
 				rd(15 downto 0) <= sel(20 downto 5);
@@ -524,11 +526,54 @@ begin
 				end if;		
 			end if;
 		end if;
+		rd_out<=rd;
 	end process alu;
 	
 end architecture behavioral;
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity instruction_fetcher is
+	port( 	
+		instruction_array: in std_logic_vector(24 downto 0);
+	     clk: in std_logic;
+		instr: out std_logic_vector(24 downto 0)
+    );
+end instruction_fetcher;
+
+architecture behavioral of instruction_fetcher is 
+type instr_array is array (63 downto 0) of std_logic_vector(24 downto 0);
+signal instructions : instr_array;
+signal PC:integer:=0; --program counter	   
+begin   
+	load: process(instruction_array)   
+	variable index:integer:=0;
+	begin
+		if(index<64) then
+			instructions(index)<=instruction_array;	 
+			index:=index+1;
+		end if;
+	end process;
+	
+	fetch: process (clk)
+	begin
+		if rising_edge(clk) then
+			instr<=instructions(PC)(24 downto 0);
+			if(PC<63) then
+--			if(PC = 63) then
+--				PC<=0;
+--			else
+				PC<=PC+1;
+			end if;
+		end if;
+	end process;	
+end architecture behavioral;
+
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -542,6 +587,7 @@ entity decoder is
 	rs1: out std_logic_vector(127 downto 0); 
 	rs2: out std_logic_vector(127 downto 0); 
 	rs3: out std_logic_vector(127 downto 0);
+	rd: out std_logic_vector(127 downto 0);
 	sel: out std_logic_vector(24 downto 0)
     );
 end decoder;
@@ -582,7 +628,7 @@ signal reg : register_array:= (
 "10000111010111001100111011011000101000101011111011100011000000011100101100100101000010110111111000010010101111110100100000110110",
 "00011010010100000010101110000100111101111001111000100110000011010000101010000111101110100110111110001111101010011010010011001010");  		 --array of all 32 128-bit registers					
 begin
-	decode: process (instr, register_write)
+	decode: process (instr, register_write, oldInstr)
 	variable index:integer:=0;			--stores the index of which register to be accessed
 	begin	   
 		index:= to_integer(unsigned(instr(9 downto 5)));
@@ -590,9 +636,11 @@ begin
 		index:= to_integer(unsigned(instr(14 downto 10)));
 		rs2 <= std_logic_vector(reg(index));	 
 		index:= to_integer(unsigned(instr(19 downto 15)));
-		rs3 <= std_logic_vector(reg(index));
+		rs3 <= std_logic_vector(reg(index));   
+		index:= to_integer(unsigned(instr(4 downto 0)));
+		rd <= std_logic_vector(reg(index));
 		sel <= instr;
-		if(oldInstr = "UUUUUUUUUUUUUUUUUUUUUUUUU") then	  --when there is no old instruction, bc the default is all 0's, then there is no write back
+		if(oldInstr = "0000000000000000000000000") then	  --when there is no old instruction, bc the default is all 0's, then there is no write back
 			--do nothing
 		else											  --otherwise using the rd of the old instruction, save the write back to that register
 			index:= to_integer(unsigned(oldInstr(4 downto 0)));
@@ -600,50 +648,6 @@ begin
 		end if;																  
 	end process;	
 end architecture behavioral;	
-
-
-
-library ieee;
-use ieee.std_logic_1164.all;
-use ieee.numeric_std.all;
-
-entity instruction_fetcher is
-	port( 	
-		instruction_array: in std_logic_vector(24 downto 0);
-	     clk: in std_logic;
-		instr: out std_logic_vector(24 downto 0)
-    );
-end instruction_fetcher;
-
-architecture behavioral of instruction_fetcher is 
-type instr_array is array (63 downto 0) of std_logic_vector(24 downto 0);
-signal instructions : instr_array;
-signal PC:integer:=0; --program counter	
---signal index:integer:=0; --loading counter
-begin  
-	load: process(instruction_array)   
-	variable index:integer:=0;
-	begin
-		if(index>63) then
-			index:=0;
-		end if;
-		instructions(index)<=instruction_array;	 
-		index:=index+1;
-	end process;
-	
-	fetch: process (clk)
-	begin
-		if rising_edge(clk) then
-			instr<=instructions(PC)(24 downto 0);	 
-			if(PC = 63) then
-				PC<=0;
-			else
-				PC<=PC+1;
-			end if;
-		end if;
-	end process;	
-end architecture behavioral;
-
 
 
 library ieee;
@@ -654,13 +658,15 @@ entity data_forwarding is
 	port( 	 
 		rs1: in std_logic_vector(127 downto 0);
 		rs2: in std_logic_vector(127 downto 0);
-		rs3: in std_logic_vector(127 downto 0);
+		rs3: in std_logic_vector(127 downto 0);	 
+		rd: in std_logic_vector(127 downto 0);
 		newInstr: in std_logic_vector(24 downto 0);	  
 		currentInstr: in std_logic_vector(24 downto 0);	
 		mmAluOut: in std_logic_vector(127 downto 0);  
 		rs1_out: out std_logic_vector(127 downto 0);
 		rs2_out: out std_logic_vector(127 downto 0);
-		rs3_out: out std_logic_vector(127 downto 0);
+		rs3_out: out std_logic_vector(127 downto 0); 
+		rd_out: out std_logic_vector(127 downto 0);
 		instruction_out: out std_logic_vector(24 downto 0)
     );
 end data_forwarding;
@@ -669,30 +675,35 @@ architecture behavioral of data_forwarding is
 begin
 	forward: process (newInstr, currentInstr)
 	begin	
-		if newInstr(24)='0' then
+		if (currentInstr(4 downto 0) = newInstr(4 downto 0)) then
+			rd_out <= mmAluOut;
 			rs1_out <= rs1;
 			rs2_out <= rs2;
 			rs3_out <= rs3;
-			instruction_out <= newInstr;
+			instruction_out <= newInstr;	   
 		elsif (currentInstr(4 downto 0) = newInstr(9 downto 5)) then
 			rs1_out <= mmAluOut;
 			rs2_out <= rs2;
-			rs3_out <= rs3;	
+			rs3_out <= rs3;
+			rd_out <= rd;
 			instruction_out <= newInstr;
 		elsif (currentInstr(4 downto 0) = newInstr(14 downto 10)) then		
 			rs2_out <= mmAluOut;
 			rs1_out <= rs1;
-			rs3_out <= rs3;	 
+			rs3_out <= rs3;
+			rd_out <= rd;
 			instruction_out <= newInstr;
 		elsif (currentInstr(4 downto 0) = newInstr(19 downto 15)) then
 			rs3_out <= mmAluOut;
 			rs1_out <= rs1;
-			rs2_out <= rs2;
+			rs2_out <= rs2;	
+			rd_out <= rd;
 			instruction_out <= newInstr;
 		else
 			rs1_out <= rs1;
 			rs2_out <= rs2;
-			rs3_out <= rs3;
+			rs3_out <= rs3;	
+			rd_out <= rd;
 			instruction_out <= newInstr;
 		end if;	
 	end process;	
@@ -713,12 +724,12 @@ entity four_stage_pipelined_multimedia_unit is
 end four_stage_pipelined_multimedia_unit;
 
 architecture structural of four_stage_pipelined_multimedia_unit is	 
-signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0); 
-signal rs1, rs2, rs3, rs1_d1, rs2_d1, rs3_d1, rs1_f, rs2_f, rs3_f, rd, write_back: std_logic_vector(127 downto 0);  
+signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0):=(others=>'0'); 
+signal rs1, rs2, rs3, rd, rs1_d1, rs2_d1, rs3_d1, rd_d1, rs1_f, rs2_f, rs3_f, rd_f, rd_out, write_back: std_logic_vector(127 downto 0):=(others=>'0');  
 begin		
 	u0: entity instruction_fetcher port map(instruction_array=>instruction_array, clk=>clk, instr=>instr);
 	
-	ifid_reg: process (clk)
+	ifid_reg: process (reset, clk)
 	begin 
 		if(reset='1') then
 			instr_d1<=(others=>'0');
@@ -727,36 +738,39 @@ begin
 		end if;
 	end process;  
 								  
-	u1: entity decoder port map(instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, sel=>instruction);
+	u1: entity decoder port map(instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, rd=>rd, sel=>instruction);
 		
-	idex_reg: process (clk)
+	idex_reg: process (reset, clk)
 	begin 
 		if(reset='1') then
 			rs1_d1<=(others=>'0');
 			rs2_d1<=(others=>'0');
 			rs3_d1<=(others=>'0');
+			rd_d1<=(others=>'0');
 			instruction_d1<=(others=>'0');
 		elsif(rising_edge(clk)) then
 			rs1_d1<=rs1;
 			rs2_d1<=rs2;
-			rs3_d1<=rs3;
+			rs3_d1<=rs3; 
+			rd_d1<=rd;
 			instruction_d1<=instruction;
 		end if;
 	end process;
 	
-	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, newInstr=>instruction_d1, currentInstr=>instruction_fd1, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, instruction_out=>instruction_f);
+	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, rd=> rd_d1, newInstr=>instruction_d1, currentInstr=>instruction_fd1, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, rd_out=>rd_f, instruction_out=>instruction_f);
 		
-	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, sel=>instruction_f, rd=>rd);
+	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, rd_in=>rd_f, sel=>instruction_f, rd_out=>rd_out);
 		
-	exwb_reg: process (clk)
+	exwb_reg: process (reset, clk)
 	begin 
 		if(reset='1') then
 			instruction_fd1<=(others=>'0');
-			write_back<=(others=>'0');	   
+			write_back<=(others=>'0');
+			mmOut<=(others=>'0');
 		elsif(rising_edge(clk)) then
-			write_back<=rd;
+			write_back<=rd_out;
 			instruction_fd1<=instruction_f;
-			mmOut<=rd;
+			mmOut<=rd_out;
 		end if;
 	end process;
 	
