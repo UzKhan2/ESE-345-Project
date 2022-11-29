@@ -547,11 +547,11 @@ entity instruction_fetcher is
 end instruction_fetcher;
 
 architecture behavioral of instruction_fetcher is 
-type instr_array is array (63 downto 0) of std_logic_vector(24 downto 0);
+type instr_array is array (63 downto 0) of std_logic_vector(24 downto 0);	
 signal instructions : instr_array;
-signal PC:integer:=0; --program counter	   
+signal PC:integer:=0; --program counter	   							--array holding all the instructions
 begin   
-	load: process(instruction_array)   
+	load: process(instruction_array)   				  --load instructions fed from the text file to the testbench to the instructions array
 	variable index:integer:=0;
 	begin
 		if(index<64) then
@@ -560,14 +560,11 @@ begin
 		end if;
 	end process;
 	
-	fetch: process (clk)
+	fetch: process (clk)							--every clock cycle, an instruction is output
 	begin
 		if rising_edge(clk) then
 			instr<=instructions(PC)(24 downto 0);
 			if(PC<63) then
---			if(PC = 63) then
---				PC<=0;
---			else
 				PC<=PC+1;
 			end if;
 		end if;
@@ -596,7 +593,7 @@ end decoder;
 
 architecture behavioral of decoder is 
 type register_array is array (31 downto 0) of std_logic_vector(127 downto 0);
-signal reg : register_array:= (
+signal reg : register_array:= (										 --array of all 32 128-bit registers	
 "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 "01101100000010101111000001001100011001010010010100010011111010010111100001000001001111110001010011111010010101010001110000000001",
 "00101010101011011100011110101100110101010001101110001010100000100111010100101001101001001100101010011101000001101000110110101011",
@@ -628,9 +625,9 @@ signal reg : register_array:= (
 "11101110010000000110101101010100010110101011111100101101111000111111000011101111010000001111111011011111001010001100000001001110",
 "00101001010011000110110101001001011010110011000011011111011001100000101000000010000111000110001111001010111010010011110110001111",
 "10000111010111001100111011011000101000101011111011100011000000011100101100100101000010110111111000010010101111110100100000110110",
-"00011010010100000010101110000100111101111001111000100110000011010000101010000111101110100110111110001111101010011010010011001010");  		 --array of all 32 128-bit registers					
+"00011010010100000010101110000100111101111001111000100110000011010000101010000111101110100110111110001111101010011010010011001010");  						
 begin
-	decode: process (instr, register_write, oldInstr)
+	decode: process (instr, register_write, oldInstr)			   --takes the instruction and inspects it to determine which registers are rs1, rs2, and rs3. Then outputs them and the instruction. Also stores the alu result (after it passes through the final register) to the register corresponding to its rd by also taking in that reasult's instruction and checking its rd section
 	variable index:integer:=0;			--stores the index of which register to be accessed
 	begin	   
 		index:= to_integer(unsigned(instr(9 downto 5)));
@@ -650,7 +647,7 @@ begin
 		end if;																  
 	end process;	  
 	
-	show_regs: process
+	show_regs: process								 --shows the final values of the registers after the clock ends and everything is settled. Used for comparison with expected results file
 	begin 
 		wait until done = '1';
 		for reg_num in 0 to 31 loop
@@ -686,33 +683,33 @@ end data_forwarding;
 
 architecture behavioral of data_forwarding is 
 begin
-	forward: process (newInstr, currentInstr)
+	forward: process (newInstr, currentInstr)							--checks if the instruction of the ALU output that passed through the last register has an rd value that's the same as the rs1, rs2, rs3, or rd value of the next instruction and if so, it replaces the currently stored value with rd, which is the newest value, effectively forwarding the data before storing it
 	begin	
-		if (currentInstr(4 downto 0) = newInstr(4 downto 0)) then
-			rd_out <= mmAluOut;
+		if (currentInstr(4 downto 0) = newInstr(4 downto 0)) then		  --if rd old = rd new
+			rd_out <= mmAluOut;										
 			rs1_out <= rs1;
 			rs2_out <= rs2;
 			rs3_out <= rs3;
 			instruction_out <= newInstr;	   
-		elsif (currentInstr(4 downto 0) = newInstr(9 downto 5)) then
+		elsif (currentInstr(4 downto 0) = newInstr(9 downto 5)) then   --if rd old = rs1 new
 			rs1_out <= mmAluOut;
 			rs2_out <= rs2;
 			rs3_out <= rs3;
 			rd_out <= rd;
 			instruction_out <= newInstr;
-		elsif (currentInstr(4 downto 0) = newInstr(14 downto 10)) then		
+		elsif (currentInstr(4 downto 0) = newInstr(14 downto 10)) then		--if rd old = rs2 new
 			rs2_out <= mmAluOut;
 			rs1_out <= rs1;
 			rs3_out <= rs3;
 			rd_out <= rd;
 			instruction_out <= newInstr;
-		elsif (currentInstr(4 downto 0) = newInstr(19 downto 15)) then
+		elsif (currentInstr(4 downto 0) = newInstr(19 downto 15)) then	  --if rd old = rs3 new
 			rs3_out <= mmAluOut;
 			rs1_out <= rs1;
 			rs2_out <= rs2;	
 			rd_out <= rd;
 			instruction_out <= newInstr;
-		else
+		else													--if none, then let them pass unaltered
 			rs1_out <= rs1;
 			rs2_out <= rs2;
 			rs3_out <= rs3;	
@@ -745,12 +742,12 @@ entity four_stage_pipelined_multimedia_unit is
 end four_stage_pipelined_multimedia_unit;
 
 architecture structural of four_stage_pipelined_multimedia_unit is	 
-signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0):=(others=>'0'); 
+signal instr, instr_d1, instruction, instruction_d1, instruction_f, instruction_fd1: std_logic_vector(24 downto 0):=(others=>'0'); 	   --intermediate signals, used like wires to conenct the components
 signal rs1, rs2, rs3, rd, rs1_d1, rs2_d1, rs3_d1, rd_d1, rs1_f, rs2_f, rs3_f, rd_f, rd_out, write_back: std_logic_vector(127 downto 0):=(others=>'0'); 
 begin		
-	u0: entity instruction_fetcher port map(instruction_array=>instruction_array, clk=>clk, instr=>instr);
+	u0: entity instruction_fetcher port map(instruction_array=>instruction_array, clk=>clk, instr=>instr);	--connects instruction fetcher to take inputs from the testbench
 	
-	ifid_reg: process (reset, clk)
+	ifid_reg: process (reset, clk)	  --id/id register. Delays everything between instruction fetcher and decoder by one clock cycle
 	begin 
 		if(reset='1') then
 			instr_d1<=(others=>'0');
@@ -760,16 +757,21 @@ begin
 		end if;
 	end process;  
 								  
-	u1: entity decoder port map(done=>done, instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, rd=>rd, sel=>instruction, register_status=>register_status);
+	u1: entity decoder port map(done=>done, instr=>instr_d1, register_write=>write_back, oldInstr=>instruction_fd1 , rs1=>rs1, rs2=>rs2, rs3=>rs3, rd=>rd, sel=>instruction, register_status=>register_status);		--decoder connects instruction buffer and forwarding unit, and also outputs the register status to the tb
 		
-	idex_reg: process (reset, clk)
+	idex_reg: process (reset, clk)	  --id/ex register. Delays everything between decoder and forwarding unit by one clock cycle
 	begin 
 		if(reset='1') then
 			rs1_d1<=(others=>'0');
 			rs2_d1<=(others=>'0');
 			rs3_d1<=(others=>'0');
-			rd_d1<=(others=>'0');
+			rd_d1<=(others=>'0');  
 			instruction_d1<=(others=>'0');
+			instruction_d1<=(others=>'0');
+			rs1_d1_check<=(others=>'0');	
+			rs2_d1_check<=(others=>'0');
+			rs3_d1_check<=(others=>'0');
+			instruction_d1_check<=(others=>'0');
 		elsif(rising_edge(clk)) then
 			rs1_d1<=rs1;
 			rs2_d1<=rs2;
@@ -783,16 +785,17 @@ begin
 		end if;
 	end process;
 	
-	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, rd=> rd_d1, newInstr=>instruction_d1, currentInstr=>instruction_fd1, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, rd_out=>rd_f, instruction_out=>instruction_f);
+	u2: entity data_forwarding port map(rs1=>rs1_d1, rs2=>rs2_d1, rs3=>rs3_d1, rd=> rd_d1, newInstr=>instruction_d1, currentInstr=>instruction_fd1, mmAluOut=>write_back, rs1_out=>rs1_f, rs2_out=>rs2_f, rs3_out=>rs3_f, rd_out=>rd_f, instruction_out=>instruction_f);  --connects forwarding unit between decoder and alu, while also conencted to output of final register
 		
-	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, rd_in=>rd_f, sel=>instruction_f, rd_out=>rd_out);
+	u3: entity mm_alu port map(rs1=>rs1_f, rs2=>rs2_f, rs3=>rs3_f, rd_in=>rd_f, sel=>instruction_f, rd_out=>rd_out);	--connects alu between forwarding unit and final register
 		
-	exwb_reg: process (reset, clk)
+	exwb_reg: process (reset, clk)		--ex/wb register. Delays output of the alu and the instruction output from the forwarding unit by one cycle
 	begin 
 		if(reset='1') then
 			instruction_fd1<=(others=>'0');
 			write_back<=(others=>'0');
-			mmOut<=(others=>'0');
+			mmOut<=(others=>'0');	 
+			instruction_fd1_check<=(others=>'0');
 		elsif(rising_edge(clk)) then
 			write_back<=rd_out;
 			instruction_fd1<=instruction_f;
