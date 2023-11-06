@@ -157,4 +157,4 @@ An ALU unit that performs a variety of computations based on MIPS instructions
 
 **xxxx1111**
 	
-SFHS: subtract from halfword saturated: packed 16-bit halfword signed subtraction with the saturation of the contents of rs1 from rs2 (rd = rs2 - rs1). (Comments: 8 separate 16-bit values in each 128-bit 
+- SFHS: subtract from halfword saturated: packed 16-bit halfword signed subtraction with the saturation of the contents of rs1 from rs2 (rd = rs2 - rs1). (Comments: 8 separate 16-bit values in each 128-bit 
