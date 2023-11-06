@@ -1,12 +1,14 @@
-# ESE-345-Project
+# Project Description
 An ALU unit that performs a variety of computations based on MIPS instructions 
 <br /> First take in a series of MIPS instructions and convert them into a string of binary instructions the ALU can read
 <br /> Utilizing the first two bits of the select input you determine which of three instruction types to perform. A 00 or 01 means that you perform an immediate load of certain bits of select into a specific position in the destination register. A 10 means you'll be computing R4 instructions, which are a multiplying combination followed by addition or subtraction. Lastly, 11 refers to an R3 instruction which is the most diverse class of instruction varying from NOP, comparisons, and logical operations, to rotating bits
 <br /> After decoding the instructions the ALU would execute the instruction based on another set of input memory, along with a forwarding unit that allows the unit to execute and output data concurrently with pipelined data
 
+# Project Instructions
+
 **Multimedia ALU**
 
-Takes up to three inputs from the Register File, and calculates the result based on the current instruction to be performed.
+- Takes up to three inputs from the Register File, and calculates the result based on the current instruction to be performed.
 
 **Register File**
 
@@ -31,7 +33,6 @@ All instructions (including li) take four cycles to complete. This pipeline must
 **Testbench**
 
  This module loads the instruction buffer using data loaded from a file, begins simulation, and upon completion, compares the contents of the register file to a file containing the expected results.
-
 
 **Assembler**
  This is a separate program written in any language your team prefers (i.e. Java, C++, Python). Its purpose is to convert an assembly file to the binary format for the Instruction Buffer.
